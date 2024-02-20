@@ -83,6 +83,8 @@ internal static class Program
             diffs.WriteLine(diff.ToString("F4"));
         }
         
+        diffs.Dispose();
+        
         Console.WriteLine($"Done! Average difference: {totalAvg / 75:F4} / 255");
     }
 }
