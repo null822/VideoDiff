@@ -84,6 +84,6 @@ internal static class Program
         
         outputVideo.Release();
         
-        Console.WriteLine($"Done! Average disruption: {totalAvg / 75:F3} / 255");
+        Console.WriteLine($"Done! Average difference: {totalAvg / 75:F3} / 255");
     }
 }

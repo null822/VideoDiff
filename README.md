@@ -1,0 +1,1 @@
+﻿Compares each frame in a video, and creates a new video containing the difference, and returns the average difference.
