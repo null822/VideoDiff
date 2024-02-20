@@ -1,6 +1,4 @@
 ﻿using OpenCvSharp;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Size = OpenCvSharp.Size;
 
 namespace VideoDiff;
@@ -9,40 +7,35 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        // using var controlFrame = (Image<Rgb24>)Image.Load("control.png");
-        using var controlFrame = new Mat("control.png");
+        var controlFramePath = args.Length > 0 ? args[0] : "control.png";
+        var samplePath = args.Length > 1 ? args[1] : "sample.mp4";
+        var outputPath = args.Length > 2 ? args[2] : "output.mp4";
+
         
-        using var inputVideo = new VideoCapture("sample.webm");
+        using var controlFrame = new Mat(controlFramePath);
+        
+        using var inputVideo = new VideoCapture(samplePath);
         var frameSize = new Size(inputVideo.FrameWidth, inputVideo.FrameHeight);
         var totalFrames = inputVideo.FrameCount;
 
-        using var outputVideo = new VideoWriter("output.mp4", FourCC.Default, inputVideo.Fps, frameSize);
+        using var outputVideo = new VideoWriter(outputPath, FourCC.Default, inputVideo.Fps, frameSize);
         
         using var frame = new Mat();
 
         var pixels = new int[frameSize.Height, frameSize.Width];
+        var frameDiffs = new float[totalFrames];
 
         var totalAvg = 0d;
 
         while (inputVideo.Read(frame))
         {
-            // inMat.GetRectangularArray(out int[,] frame);
-            
-            // var frameStream = inMat.ToMemoryStream();
-            // using var frame = (Image<Rgb24>)Image.Load(frameStream);
-            // frameStream.Dispose();
-
             var size = frame.Size();
 
-            // OpenCvSharp.MatType.CV_8UC3
-            
-            // using var outFrame = new Mat(frameSizeArr, inMat.Type());
-
-            var frameAvg = 0d;
+            var frameAvg = 0f;
             
             for (var x = 0; x < size.Width; x++)
             {
-                var colAvg = 0d;
+                var colAvg = 0f;
                 
                 for (var y = 0; y < size.Height; y++)
                 {
@@ -70,20 +63,26 @@ internal static class Program
 
                 frameAvg += colAvg / size.Height;
             }
-            totalAvg += frameAvg / size.Width;
+            var frameDiff = frameAvg / size.Width;
+            totalAvg += frameDiff;
             
             outputVideo.Write(InputArray.Create(pixels, MatType.CV_8UC4));
             
             var pos = inputVideo.PosFrames;
+            frameDiffs[pos-1] = frameDiff;
             
-            if (pos > 75)
-                break;
-            
-            Console.WriteLine($"{pos} / {totalFrames}");
+            Console.WriteLine($"progress: {pos} / {totalFrames}");
         }
         
         outputVideo.Release();
+
+        var diffs = File.CreateText("frame_diffs.txt");
         
-        Console.WriteLine($"Done! Average difference: {totalAvg / 75:F3} / 255");
+        foreach (var diff in frameDiffs)
+        {
+            diffs.WriteLine(diff.ToString("F4"));
+        }
+        
+        Console.WriteLine($"Done! Average difference: {totalAvg / 75:F4} / 255");
     }
 }
